@@ -1,120 +1,79 @@
-/* Dynamic Funcionality */
-$('document').ready(function () {
-  /* Listens for changes on each INPUT checkbox tag */
-  const amenitiesId = {};
-  $('INPUT[type="checkbox"]').click(function () {
+window.addEventListener('load', function () {
+  // task 3
+  $.ajax('http://0.0.0.0:5001/api/v1/status').done(function (data) {
+    if (data.status === 'OK') {
+      $('#api_status').addClass('available');
+    } else {
+      $('#api_status').removeClass('available');
+    }
+  });
+
+  // task 2
+  const amenityIds = {};
+  $('input[type=checkbox]').click(function () {
     if ($(this).prop('checked')) {
-      amenitiesId[$(this).attr('data-id')] = $(this).attr('data-name');
-    } else {
-      delete amenitiesId[$(this).attr('data-id')];
+      amenityIds[$(this).attr('data-id')] = $(this).attr('data-name');
+    } else if (!$(this).prop('checked')) {
+      delete amenityIds[$(this).attr('data-id')];
     }
-    $('.amenities h4').text(Object.values(amenitiesId).join(', '));
-  });
-  /* Get status of api and change class if api not available
-  Request status every 10 seconds */
-  /* Simple way, manual re-loading page: */
-  /* $.get(`http://${window.location.hostname}:5001/api/v1/status/`, function(status){
-    if (status.status === 'OK') {
-      $('DIV#api_status').addClass('available');
+    if (Object.keys(amenityIds).length === 0) {
+      $('div.amenities h4').html('&nbsp;');
     } else {
-       $('DIV#api_status').removeClass('available');
+      $('div.amenities h4').text(Object.values(amenityIds).join(', '));
     }
   });
-  */
-  const callout = function () {
-    $.ajax({
-      type: 'get',
-      url: `http://${window.location.hostname}:5001/api/v1/status/`,
-      timeout: 5000,
-      success: function (status) {
-        if (status.status === 'OK') {
-          $('DIV#api_status').addClass('available');
-        } else {
-          $('DIV#api_status').removeClass('available');
-        }
-      },
-      error: function () {
-        $('DIV#api_status').removeClass('available');
-      },
-      complete: function () {
-        setTimeout(callout, 10000);
-      }
-    });
-  };
-  callout();
-  /*
-    Retrieve all places and create a articule tag with them
-  */
-  const getPlaces = function () {
+
+  // task 4
+  $('.filters button').click(function () {
     $.ajax({
       type: 'POST',
+      url: 'http://0.0.0.0:5001/api/v1/places_search/',
       contentType: 'application/json',
-      url: 'http://localhost:5001/api/v1/places_search/',
-      data: '{}',
-      dataType: 'json',
-      success: function (places) {
-        $.each(places, function (index, place) {
-          $('.places').append(
-            '<article>' +
-            '<div class="title_box">' +
-            '<h2>' + place.name + '</h2>' +
-            '<div class="price_by_night">' + '$' + place.price_by_night +
-            '</div>' +
-            '</div>' +
-            '<div class="information">' +
-            '<div class="max_guest">' +
-            '<br />' + place.max_guest + ' Guests' +
-            '</div>' +
-            '<div class="number_rooms">' +
-            '<br />' + place.number_rooms + ' Bedrooms' +
-            '</div>' +
-            '<div class="number_bathrooms">' +
-            '<br />' + place.number_bathrooms + ' Bathroom' +
-            '</div>' +
-            '</div>' +
-            '<div class="description">' + place.description +
-            '</div>' +
-            '</article>');
-        });
-      }
-    });
-  };
-  getPlaces();
-  /*
-    Filter places by amenities on button search click
-  */
-  $('button').click(function () {
-    $.ajax({
-      type: 'POST',
-      contentType: 'application/json',
-      url: 'http://localhost:5001/api/v1/places_search/',
-      data: JSON.stringify({ amenities: Object.keys(amenitiesId) }),
-      dataType: 'json',
-      success: function (places) {
-        $('.places').empty();
-        $.each(places, function (index, place) {
-          $('.places').append(
-            '<article>' +
-            '<div class="title_box">' +
-            '<h2>' + place.name + '</h2>' +
-            '<div class="price_by_night">' + '$' + place.price_by_night +
-            '</div>' +
-            '</div>' +
-            '<div class="information">' +
-            '<div class="max_guest">' +
-            '<br />' + place.max_guest + ' Guests' +
-            '</div>' +
-            '<div class="number_rooms">' +
-            '<br />' + place.number_rooms + ' Bedrooms' +
-            '</div>' +
-            '<div class="number_bathrooms">' +
-            '<br />' + place.number_bathrooms + ' Bathroom' +
-            '</div>' +
-            '</div>' +
-            '<div class="description">' + place.description +
-            '</div>' +
-            '</article>');
-        });
+      data: JSON.stringify({ amenities: Object.keys(amenityIds) })
+    }).done(function (data) {
+      $('section.places').empty();
+      $('section.places').append('<h1>Places</h1>');
+      for (const place of data) {
+        const template = `<article>
+        <div class="title">
+        <h2>${place.name}</h2>
+        <div class="price_by_night">
+      $${place.price_by_night}
+      </div>
+        </div>
+        <div class="information">
+        <div class="max_guest">
+        <i class="fa fa-users fa-3x" aria-hidden="true"></i>
+
+        <br />
+
+      ${place.max_guest} Guests
+
+      </div>
+        <div class="number_rooms">
+        <i class="fa fa-bed fa-3x" aria-hidden="true"></i>
+
+        <br />
+
+      ${place.number_rooms} Bedrooms
+      </div>
+        <div class="number_bathrooms">
+        <i class="fa fa-bath fa-3x" aria-hidden="true"></i>
+
+        <br />
+
+      ${place.number_bathrooms} Bathroom
+
+      </div>
+        </div>
+        <div class="description">
+
+      ${place.description}
+
+      </div>
+
+      </article> <!-- End 1 PLACE Article -->`;
+        $('section.places').append(template);
       }
     });
   });

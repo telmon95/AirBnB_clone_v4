@@ -1,200 +1,133 @@
-/* Dynamic Funcionality */
-$('document').ready(function () {
-  /* Listens for changes on each amenities INPUT checkbox tag */
-  const amenitiesId = {};
-  $('.amenities INPUT[type="checkbox"]').click(function () {
-    if ($(this).prop('checked')) {
-      amenitiesId[$(this).attr('data-id')] = $(this).attr('data-name');
+window.addEventListener('load', function () {
+  // task 3
+  $.ajax('http://0.0.0.0:5001/api/v1/status').done(function (data) {
+    if (data.status === 'OK') {
+      $('#api_status').addClass('available');
     } else {
-      delete amenitiesId[$(this).attr('data-id')];
-    }
-    $('.amenities h4').text(Object.values(amenitiesId).join(', '));
-  });
-  /* Listens for changes on each states INPUT checkbox tag */
-  const statesId = {};
-  const citiesId = {};
-  const citiesStates = {};
-  $('.locations h2 INPUT[type="checkbox"]').click(function () {
-    if ($(this).prop('checked')) {
-      statesId[$(this).attr('data-id')] = $(this).attr('data-name');
-      citiesStates[$(this).attr('data-id')] = $(this).attr('data-name');
-    } else {
-      delete statesId[$(this).attr('data-id')];
-      delete citiesStates[$(this).attr('data-id')];
-    }
-    $('.locations h4').text(Object.values(citiesStates).join(', '));
-    // Object.assign(citiesStates, statesId, citiesId);
-    // $('.locations h4').text(Object.values(citiesStates).join(', '));
-  });
-  /* Listens for changes on each cities INPUT checkbox tag */
-  $('.locations ul li ul INPUT[type="checkbox"]').click(function () {
-    if ($(this).prop('checked')) {
-      citiesId[$(this).attr('data-id')] = $(this).attr('data-name');
-      citiesStates[$(this).attr('data-id')] = $(this).attr('data-name');
-    } else {
-      delete citiesId[$(this).attr('data-id')];
-      delete citiesStates[$(this).attr('data-id')];
-    }
-    $('.locations h4').text(Object.values(citiesStates).join(', '));
-  });
-  /* Get status of api and change class if api not available
-  Request status every 10 seconds */
-  /* Simple way, manual re-loading page: */
-  /* $.get(`http://${window.location.hostname}:5001/api/v1/status/`, function(status){
-    if (status.status === 'OK') {
-      $('DIV#api_status').addClass('available');
-    } else {
-       $('DIV#api_status').removeClass('available');
+      $('#api_status').removeClass('available');
     }
   });
-  */
-  const callout = function () {
-    $.ajax({
-      type: 'get',
-      url: `http://${window.location.hostname}:5001/api/v1/status/`,
-      timeout: 5000,
-      success: function (status) {
-        if (status.status === 'OK') {
-          $('DIV#api_status').addClass('available');
-        } else {
-          $('DIV#api_status').removeClass('available');
-        }
-      },
-      error: function () {
-        $('DIV#api_status').removeClass('available');
-      },
-      complete: function () {
-        setTimeout(callout, 10000);
-      }
-    });
-  };
-  callout();
 
-  /* Retrieve all places and create a articule tag with them */
-  const getPlaces = function (data) {
+  // task 2
+  const amenityIds = {};
+  $('.amenities input[type=checkbox]').click(function () {
+    if ($(this).prop('checked')) {
+      amenityIds[$(this).attr('data-id')] = $(this).attr('data-name');
+    } else if (!$(this).prop('checked')) {
+      delete amenityIds[$(this).attr('data-id')];
+    }
+    if (Object.keys(amenityIds).length === 0) {
+      $('div.amenities h4').html('&nbsp;');
+    } else {
+      $('div.amenities h4').text(Object.values(amenityIds).join(', '));
+    }
+  });
+
+  const stateIds = {};
+  const cityIds = {};
+  // task 4
+  $('.filters button').click(function () {
     $.ajax({
       type: 'POST',
+      url: 'http://0.0.0.0:5001/api/v1/places_search/',
       contentType: 'application/json',
-      url: 'http://localhost:5001/api/v1/places_search/',
-      data: '{}',
-      dataType: 'json',
-      success: function (places) {
-        $.each(places, function (index, place) {
-          $('.places').append(
-            '<article>' +
-            '<div class="title_box">' +
-            '<h2>' + place.name + '</h2>' +
-            '<div class="price_by_night">' + '$' + place.price_by_night +
-            '</div>' +
-            '</div>' +
-            '<div class="information">' +
-            '<div class="max_guest">' +
-            '<br />' + place.max_guest + ' Guests' +
-            '</div>' +
-            '<div class="number_rooms">' +
-            '<br />' + place.number_rooms + ' Bedrooms' +
-            '</div>' +
-            '<div class="number_bathrooms">' +
-            '<br />' + place.number_bathrooms + ' Bathroom' +
-            '</div>' +
-            '</div>' +
-            '<div class="description">' + place.description +
-            '</div>' +
-            '<div class="reviews" id="' + place.id + '">' +
-            '<h2><b>Reviews</b></h2>' +
-            '<span class="display" id="' + place.id + '"> Show</span>' +
-            '</div>' +
-            '</article>'
-          );
-        });
-      }
-    });
-  };
-  getPlaces();
-
-  /*
-    Get reviews list from a place when display class is clicked
-  */
-  $('.places').on('click', '.display', function () {
-    const reviewId = 'div#' + $(this).attr('id');
-    if ($(this).text() === ' Show') {
-      $(this).text(' Hide');
-      $.ajax({
-        type: 'GET',
-        url: 'http://localhost:5001/api/v1/places/' + $(this).attr('id') + '/reviews',
-        success: function (reviews) {
-          const reviewsNumbers = Object.keys(reviews).length;
-          $(reviewId + ' h2').prepend(reviewsNumbers + ' ');
-          $.each(reviews, function (index, review) {
-            const date = review.created_at.split('T')[0];
-            $.ajax({
-              type: 'GET',
-              url: 'http://localhost:5001/api/v1/users/' + review.user_id,
-              success: function (user) {
-                $(reviewId).append(
-                  '<ul>' +
-                  '<li>' +
-                  '<h3>' + 'From ' + user.first_name + ' ' + user.last_name +
-                  ' ' + date + '</h3>' +
-                  '<p>' + review.text + '</p>' +
-                  '</li>' +
-                  '</ul>'
-                );
-              }
-            });
-          });
-        }
-      });
-    } else {
-      $('.reviews h2').text('Reviews');
-      $('span').text(' Show');
-      $(reviewId + ' ul').css('display', 'none');
-    }
-  });
-
-  /* Filter places by amenities on button search click */
-  $('button').click(function () {
-    $.ajax({
-      type: 'POST',
-      contentType: 'application/json',
-      url: 'http://localhost:5001/api/v1/places_search/',
       data: JSON.stringify({
-        amenities: Object.keys(amenitiesId),
-        states: Object.keys(statesId),
-        cities: Object.keys(citiesId)
-      }),
-      dataType: 'json',
-      success: function (places) {
-        $('.places').empty();
-        $.each(places, function (index, place) {
-          $('.places').append(
-            '<article>' +
-            '<div class="title_box">' +
-            '<h2>' + place.name + '</h2>' +
-            '<div class="price_by_night">' + '$' + place.price_by_night +
-            '</div>' +
-            '</div>' +
-            '<div class="information">' +
-            '<div class="max_guest">' +
-            '<br />' + place.max_guest + ' Guests' +
-            '</div>' +
-            '<div class="number_rooms">' +
-            '<br />' + place.number_rooms + ' Bedrooms' +
-            '</div>' +
-            '<div class="number_bathrooms">' +
-            '<br />' + place.number_bathrooms + ' Bathroom' +
-            '</div>' +
-            '</div>' +
-            '<div class="description">' + place.description +
-            '</div>' +
-            '<div class="reviews" id="' + place.id + '">' +
-            '<h2><b>Reviews</b></h2>' +
-            '<span class="display" id="' + place.id + '"> Show</span>' +
-            '</div>' +
-            '</article>'
-          );
-        });
+        amenities: Object.keys(amenityIds),
+        states: Object.keys(stateIds),
+        cities: Object.keys(cityIds)
+      })
+    }).done(function (data) {
+      $('section.places').empty();
+      $('section.places').append('<h1>Places</h1>');
+      for (const place of data) {
+        const template = `<article>
+          <div class="title">
+          <h2>${place.name}</h2>
+          <div class="price_by_night">
+	  $${place.price_by_night}
+	</div>
+          </div>
+          <div class="information">
+          <div class="max_guest">
+          <i class="fa fa-users fa-3x" aria-hidden="true"></i>
+
+          <br />
+
+	${place.max_guest} Guests
+
+	</div>
+          <div class="number_rooms">
+          <i class="fa fa-bed fa-3x" aria-hidden="true"></i>
+
+          <br />
+
+	${place.number_rooms} Bedrooms
+	</div>
+          <div class="number_bathrooms">
+          <i class="fa fa-bath fa-3x" aria-hidden="true"></i>
+          <br />
+	  ${place.number_bathrooms} Bathroom
+	</div>
+	  </div>
+          <div class="description">
+	  ${place.description}
+	</div>
+	  <div class="reviews">
+	  <h2>Reviews <span class="reviewSpan" data-id="${place.id}">show</span></h2>
+	  <ul>
+	  </ul>
+	  </div>
+
+	</article> <!-- End 1 PLACE Article -->`;
+        $('section.places').append(template);
       }
+      // Task 7: get reviews for each place (add to the places post request for loop?)
+      $('.reviewSpan').click(function (event) {
+        $.ajax('http://0.0.0.0:5001/api/v1/places/' + $(this).attr('data-id') + '/reviews').done(function (data) {
+//          console.log($(this).text());
+	  $('span').addClass('hideReview');
+//	  console.log($('span'));
+//	  $('span').toggle('reviewSpan hideReview');
+          if ($('.reviewSpan').text('show')) {
+            for (const review of data) {
+              $('.reviews ul').append(`<li>${review.text}</li>`);
+            }
+	    console.log($('.reviewSpan li'));
+	    $('.hideReview').text('hide');
+//	    console.log($('.hideReiew'));
+          } else if ($('.hideReview').text('hide')){
+            $('.reviews ul').empty();
+	    $('.reviewSpan').text('show');
+          }
+        });
+      });
     });
+  });
+
+  // task 6
+  $('.stateCheckBox').click(function () {
+    if ($(this).prop('checked')) {
+      stateIds[$(this).attr('data-id')] = $(this).attr('data-name');
+    } else if (!$(this).prop('checked')) {
+      delete stateIds[$(this).attr('data-id')];
+    }
+    if (Object.keys(stateIds).length === 0 && Object.keys(cityIds).length === 0) {
+      $('.locations h4').html('&nbsp;');
+    } else {
+      $('.locations h4').text(Object.values(stateIds).concat(Object.values(cityIds)).join(', '));
+    }
+  });
+
+  $('.cityCheckBox').click(function () {
+    if ($(this).prop('checked')) {
+      cityIds[$(this).attr('data-id')] = $(this).attr('data-name');
+    } else if (!$(this).prop('checked')) {
+      delete cityIds[$(this).attr('data-id')];
+    }
+    if (Object.keys(stateIds).length === 0 && Object.keys(cityIds).length === 0) {
+      $('.locations h4').html('&nbsp;');
+    } else {
+      $('.locations h4').text(Object.values(cityIds).concat(Object.values(stateIds)).join(', '));
+    }
   });
 });

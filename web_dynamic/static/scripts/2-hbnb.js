@@ -1,21 +1,25 @@
-/* Script that listen for changes on each INPUT checkbox tag */
-$('document').ready(function () {
-  const url = 'http://' + window.location.hostname + ':5001/api/v1/status/';
-  $.get(url, function (res) {
-    if (res.status === 'OK') {
+window.addEventListener('load', function () {
+  // task 3
+  $.ajax('http://0.0.0.0:5001/api/v1/status').done(function (data) {
+    if (data.status === 'OK') {
       $('#api_status').addClass('available');
     } else {
       $('#api_status').removeClass('available');
     }
   });
 
-  const amenities = {};
-  $('INPUT[type="checkbox"]').change(function () {
-    if ($(this).is(':checked')) {
-      amenities[$(this).attr('data-id')] = $(this).attr('data-name');
-    } else {
-      delete amenities[$(this).attr('data-id')];
+  // task 2
+  const amenityIds = {};
+  $('input[type=checkbox]').click(function () {
+    if ($(this).prop('checked')) {
+      amenityIds[$(this).attr('data-id')] = $(this).attr('data-name');
+    } else if (!$(this).prop('checked')) {
+      delete amenityIds[$(this).attr('data-id')];
     }
-    $('.amenities H4').text(Object.values(amenities).join(', '));
+    if (Object.keys(amenityIds).length === 0) {
+      $('div.amenities h4').html('&nbsp');
+    } else {
+      $('div.amenities h4').text(Object.values(amenityIds).join(', '));
+    }
   });
 });
